@@ -157,6 +157,7 @@ cython_debug/
 
 # IDE
 .vscode/
+!.vscode/launch.json
 
 # Project Specific
 cadical/
