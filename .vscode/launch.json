@@ -12,6 +12,15 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "cwd": "${workspaceFolder}/sudoku"
-        }
+        },
+        {
+            "name": "Run Number Link",
+            "type": "python",
+            "request": "launch",
+            "module": "main",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}/numberlink"
+        },
     ]
 }
