@@ -2,18 +2,23 @@
 class Literal:
     count = 0
 
-    def __init__(self, *, _id: int | None = None) -> None:
-        if _id is not None:
-            self.id = _id
-        else:
-            self.id = Literal.count + 1  # 1-indexed
+    def __init__(self, *, _id: int | None = None, name: str | None = None) -> None:
+        if _id is None:
+            self.id = Literal.count + 1
             Literal.count += 1
+        else:
+            self.id = _id
+
+        self.name = name or f'x{self.id}'
 
     def __neg__(self):
         return self.__class__(_id=-self.id)
 
     def __invert__(self):
         return self.__neg__()
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class CNF:
