@@ -1,4 +1,3 @@
-
 class Literal:
     count = 0
 
