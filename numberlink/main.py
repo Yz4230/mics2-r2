@@ -87,7 +87,7 @@ class Numberlink:
                 if j == 0:
                     output += '│'
                 if grid[i][j]:
-                    output += f' {grid[i][j]} '
+                    output += f'{grid[i][j]:^3}'
                 elif north and south:
                     output += ' ┃ '
                 elif east and west:
