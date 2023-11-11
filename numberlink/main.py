@@ -414,18 +414,6 @@ def main():
                     # s_(i-1)j + e_i(j-1) <= 2
                     cc.add_clause([-p1, -p2])
 
-    # 数字マスにつながっているかどうか
-    # s_ij = 1 -> c_ij = c_(i+1)j
-    # e_ij = 1 -> c_ij = c_i(j+1)
-    c: Matrix[Literal] = []
-    for i in range(nl.rows):
-        c.append([])
-        for j in range(nl.cols):
-            c[i].append(cc.new_literal(name=f'c_{i}{j}'))
-
-    for h in nl.hints:
-        cc.add_clause([c[h.row][h.col]])
-
     # s_ij = 1 -> x_ij = x_(i+1)j
     for i in range(nl.rows-1):
         for j in range(nl.cols):
