@@ -34,12 +34,29 @@ class Numberlink:
     cols: int
     num_lines: int
     hints: tuple[Hint, ...]
-    hint_positions: set[tuple[int, int]]
-
-    def is_blank_cell(self, row: int, col: int) -> bool:
-        return (row, col) not in self.hint_positions
+    is_blank: Matrix[bool]
 
     def get_cell_pattern(self, row: int, col: int) -> Pattern:
+        # パターン分け (4x7の場合)
+        # 1. 左上
+        # 2. 上辺
+        # 3. 左辺
+        # 4. 中央
+        # 5. 右上
+        # 6. 左下
+        # 7. 右辺
+        # 8. 下辺
+        # 9. 右下
+        #    | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
+        #  ─ ┏━━━┯━━━┯━━━┯━━━┯━━━┯━━━┯━━━┓
+        #  0 ┃ 1 │ 2 │ 2 │ 2 │ 2 │ 2 │ 5 ┃
+        #  ─ ┠───┼───┼───┼───┼───┼───┼───┨
+        #  1 ┃ 3 │ 4 │ 4 │ 4 │ 4 │ 4 │ 7 ┃
+        #  ─ ┠───┼───┼───┼───┼───┼───┼───┨
+        #  2 ┃ 3 │ 4 │ 4 │ 4 │ 4 │ 4 │ 7 ┃
+        #  ─ ┠───┼───┼───┼───┼───┼───┼───┨
+        #  3 ┃ 6 │ 8 │ 8 │ 8 │ 8 │ 8 │ 9 ┃
+        #  ─ ┗━━━┷━━━┷━━━┷━━━┷━━━┷━━━┷━━━┛
         top = row == 0
         bottom = row == self.rows-1
         left = col == 0
@@ -161,12 +178,22 @@ def load_problem(filename: str) -> Numberlink:
                 p2 = Hint(n=n-1, row=p2_row, col=p2_col)
                 hints.append(p1)
                 hints.append(p2)
+
+    is_blank: Matrix[bool] = []
+    for i in range(nl_rows):
+        is_blank.append([])
+        for j in range(nl_cols):
+            is_blank[i].append(True)
+    for h in hints:
+        is_blank[h.row][h.col] = False
+
     return Numberlink(
         rows=nl_rows,
         cols=nl_cols,
         num_lines=nl_line_num,
         hints=tuple(hints),
-        hint_positions=set((h.row, h.col) for h in hints))
+        is_blank=is_blank,
+    )
 
 
 def main():
@@ -222,29 +249,8 @@ def main():
             # 右のマスへ線が出ているかどうか
             # p4 = e[i][j]
 
-            # パターン分け (4x7の場合)
-            # 1. 左上
-            # 2. 上辺
-            # 3. 左辺
-            # 4. 中央
-            # 5. 右上
-            # 6. 左下
-            # 7. 右辺
-            # 8. 下辺
-            # 9. 右下
-            #    | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
-            #  ─ ┏━━━┯━━━┯━━━┯━━━┯━━━┯━━━┯━━━┓
-            #  0 ┃ 1 │ 2 │ 2 │ 2 │ 2 │ 2 │ 5 ┃
-            #  ─ ┠───┼───┼───┼───┼───┼───┼───┨
-            #  1 ┃ 3 │ 4 │ 4 │ 4 │ 4 │ 4 │ 7 ┃
-            #  ─ ┠───┼───┼───┼───┼───┼───┼───┨
-            #  2 ┃ 3 │ 4 │ 4 │ 4 │ 4 │ 4 │ 7 ┃
-            #  ─ ┠───┼───┼───┼───┼───┼───┼───┨
-            #  3 ┃ 6 │ 8 │ 8 │ 8 │ 8 │ 8 │ 9 ┃
-            #  ─ ┗━━━┷━━━┷━━━┷━━━┷━━━┷━━━┷━━━┛
-
             pat = nl.get_cell_pattern(i, j)
-            if nl.is_blank_cell(i, j):  # 空白マスの場合
+            if nl.is_blank[i][j]:  # 空白マスの場合
                 if pat == Pattern.TOP_LEFT:  # パターン1: 左上
                     p3 = s[i][j]
                     p4 = e[i][j]
