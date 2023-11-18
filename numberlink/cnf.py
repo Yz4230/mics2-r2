@@ -42,5 +42,5 @@ class CnfComposer:
 
     def to_solver(self) -> Solver:
         clauses = [[l.id for l in c] for c in self.clauses]
-        s = Solver(name='g4', bootstrap_with=clauses)
+        s = Solver(name='cadical153', bootstrap_with=clauses, use_timer=True)
         return s

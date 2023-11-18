@@ -1,3 +1,4 @@
+from argparse import ArgumentParser
 from dataclasses import dataclass
 from enum import Enum
 from typing import TypeVar, cast
@@ -196,8 +197,45 @@ def load_problem(filename: str) -> Numberlink:
     )
 
 
+class Constraint(Enum):
+    BASIC = 1
+    U_SHAPE = 2
+    U_SHAPE_LONG = 3
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    @classmethod
+    def from_string(cls, s: str) -> 'Constraint':
+        return cls(int(s))
+
+
+parser = ArgumentParser(
+    prog='numberlink solver',
+    description='numberlink solver',
+)
+parser.add_argument(
+    'filename',
+    help='problem file',
+)
+parser.add_argument(
+    '-c', '--constraint',
+    choices=[Constraint.U_SHAPE, Constraint.U_SHAPE_LONG],
+    default=[],
+    type=Constraint.from_string,
+    help='select constraint',
+    nargs='+',
+)
+parser.add_argument(
+    '-t', '--show-only-elapsed-time',
+    action='store_true',
+    help='show only elapsed time',
+)
+opts = parser.parse_args()
+
+
 def main():
-    nl = load_problem('numberlink.txt')
+    nl = load_problem(opts.filename)
     cc = CnfComposer()
 
     # s_ijは(i, j)から下に線が伸びているかどうか
@@ -436,123 +474,126 @@ def main():
                 cc.add_clause([-e[i][j], -x[i][j][n], x[i][j+1][n]])
                 cc.add_clause([-e[i][j], x[i][j][n], -x[i][j+1][n]])
 
-    # 回り道を排除する
-    # 1: 2x2の場合
-    # 1.1:
-    # ┌───┬───┐
-    # │ ━━┿━┓ │
-    # ├───┼─╂─┤
-    # │ ━━┿━┛ │
-    # └───┴───┘
-    # 1.2:
-    # ┌───┬───┐
-    # │ ┏━┿━┓ │
-    # ├─╂─┼─╂─┤
-    # │ ┃ │ ┃ │
-    # └───┴───┘
-    # 1.3:
-    # ┌───┬───┐
-    # │ ┏━┿━━ │
-    # ├─╂─┼───┤
-    # │ ┗━┿━━ │
-    # └───┴───┘
-    # 1.4:
-    # ┌───┬───┐
-    # │ ┃ │ ┃ │
-    # ├─╂─┼─╂─┤
-    # │ ┗━┿━┛ │
-    # └───┴───┘
-    for i in range(nl.rows-1):
-        for j in range(nl.cols-1):
-            # 1
-            cc.add_clause([-e[i][j], -s[i][j+1], -e[i+1][j]])
-            # 2
-            cc.add_clause([-e[i][j], -s[i][j], -s[i][j+1]])
-            # 3
-            cc.add_clause([-e[i][j], -s[i][j], -e[i+1][j]])
-            # 4
-            cc.add_clause([-s[i][j], -s[i][j+1], -e[i+1][j]])
-    # 2: 3x2の場合
-    # 2.1:
-    # ┌───┬───┐
-    # │ ━━┿━┓ │
-    # ├───┼─╂─┤
-    # │ b │ ┃ │
-    # ├───┼─╂─┤
-    # │ ━━┿━┛ │
-    # └───┴───┘
-    # 2.2:
-    # ┌───┬───┐
-    # │ ┏━┿━━ │
-    # ├─╂─┼───┤
-    # │ ┃ │ b │
-    # ├─╂─┼───┤
-    # │ ┗━┿━━ │
-    # └───┴───┘
-    for i in range(nl.rows-2):
-        for j in range(nl.cols-1):
-            # 1
-            if nl.is_blank[i+1][j]:
-                cc.add_clause([-e[i][j], -s[i][j+1], -s[i+1][j+1], -e[i+2][j]])
-            # 2
-            if nl.is_blank[i+1][j+1]:
-                cc.add_clause([-e[i][j], -s[i][j], -s[i+1][j], -e[i+2][j]])
-    # 3: 2x3の場合
-    # 3.1:
-    # ┌───┬───┬───┐
-    # │ ┏━┿━━━┿━┓ │
-    # ├─╂─┼───┼─╂─┤
-    # │ ┃ │ b │ ┃ │
-    # └───┴───┴───┘
-    # 3.2:
-    # ┌───┬───┬───┐
-    # │ ┃ │ b │ ┃ │
-    # ├─╂─┼───┼─╂─┤
-    # │ ┗━┿━━━┿━┛ │
-    # └───┴───┴───┘
-    for i in range(nl.rows-1):
-        for j in range(nl.cols-2):
-            # 1
-            if nl.is_blank[i+1][j+1]:
-                cc.add_clause([-e[i][j], -s[i][j], -e[i][j+1], -s[i][j+2]])
-            # 2
-            if nl.is_blank[i][j+1]:
-                cc.add_clause([-s[i][j], -e[i+1][j], -e[i+1][j+1], -s[i][j+2]])
+    if Constraint.U_SHAPE in opts.constraint:
+        # 回り道を排除する
+        # 1: 2x2の場合
+        # 1.1:
+        # ┌───┬───┐
+        # │ ━━┿━┓ │
+        # ├───┼─╂─┤
+        # │ ━━┿━┛ │
+        # └───┴───┘
+        # 1.2:
+        # ┌───┬───┐
+        # │ ┏━┿━┓ │
+        # ├─╂─┼─╂─┤
+        # │ ┃ │ ┃ │
+        # └───┴───┘
+        # 1.3:
+        # ┌───┬───┐
+        # │ ┏━┿━━ │
+        # ├─╂─┼───┤
+        # │ ┗━┿━━ │
+        # └───┴───┘
+        # 1.4:
+        # ┌───┬───┐
+        # │ ┃ │ ┃ │
+        # ├─╂─┼─╂─┤
+        # │ ┗━┿━┛ │
+        # └───┴───┘
+        for i in range(nl.rows-1):
+            for j in range(nl.cols-1):
+                # 1
+                cc.add_clause([-e[i][j], -s[i][j+1], -e[i+1][j]])
+                # 2
+                cc.add_clause([-e[i][j], -s[i][j], -s[i][j+1]])
+                # 3
+                cc.add_clause([-e[i][j], -s[i][j], -e[i+1][j]])
+                # 4
+                cc.add_clause([-s[i][j], -s[i][j+1], -e[i+1][j]])
+
+    if Constraint.U_SHAPE_LONG in opts.constraint:
+        # 2: 3x2の場合
+        # 2.1:
+        # ┌───┬───┐
+        # │ ━━┿━┓ │
+        # ├───┼─╂─┤
+        # │ b │ ┃ │
+        # ├───┼─╂─┤
+        # │ ━━┿━┛ │
+        # └───┴───┘
+        # 2.2:
+        # ┌───┬───┐
+        # │ ┏━┿━━ │
+        # ├─╂─┼───┤
+        # │ ┃ │ b │
+        # ├─╂─┼───┤
+        # │ ┗━┿━━ │
+        # └───┴───┘
+        for i in range(nl.rows-2):
+            for j in range(nl.cols-1):
+                # 1
+                if nl.is_blank[i+1][j]:
+                    cc.add_clause(
+                        [-e[i][j], -s[i][j+1], -s[i+1][j+1], -e[i+2][j]])
+                # 2
+                if nl.is_blank[i+1][j+1]:
+                    cc.add_clause([-e[i][j], -s[i][j], -s[i+1][j], -e[i+2][j]])
+
+        # 3: 2x3の場合
+        # 3.1:
+        # ┌───┬───┬───┐
+        # │ ┏━┿━━━┿━┓ │
+        # ├─╂─┼───┼─╂─┤
+        # │ ┃ │ b │ ┃ │
+        # └───┴───┴───┘
+        # 3.2:
+        # ┌───┬───┬───┐
+        # │ ┃ │ b │ ┃ │
+        # ├─╂─┼───┼─╂─┤
+        # │ ┗━┿━━━┿━┛ │
+        # └───┴───┴───┘
+        for i in range(nl.rows-1):
+            for j in range(nl.cols-2):
+                # 1
+                if nl.is_blank[i+1][j+1]:
+                    cc.add_clause([-e[i][j], -s[i][j], -e[i][j+1], -s[i][j+2]])
+                # 2
+                if nl.is_blank[i][j+1]:
+                    cc.add_clause(
+                        [-s[i][j], -e[i+1][j], -e[i+1][j+1], -s[i][j+2]])
 
     with open('numberlink.cnf', 'w') as f:
         f.write(cc.to_dimacs())
 
-    print('Problem:')
-    nl.show()
+    if not opts.show_only_elapsed_time:
+        print('Problem:')
+        nl.show()
 
     solver = cc.to_solver()
-    if (not solver.solve()):
+    is_satisfiable = solver.solve()
+
+    if opts.show_only_elapsed_time:
+        print(solver.time())
+        return
+
+    if (not is_satisfiable):
         print('UNSAT')
         core = solver.get_core()
         print(core)
         return
-    model = solver.get_model()
-    model = cast(list[int], model)
 
-    answer_x: Matrix[int] = []
-    for i in range(nl.rows):
-        answer_x.append([])
-        for j in range(nl.cols):
-            for n in range(nl.num_lines):
-                if model[x[i][j][n].id-1] > 0:
-                    print(f'x({i},{j}) = {n}')
+    model = cast(list[int], solver.get_model())
     answer_s: Matrix[bool] = []
     for i in range(nl.rows-1):
         answer_s.append([])
         for j in range(nl.cols):
             answer_s[i].append(model[s[i][j].id-1] > 0)
-            print(f's({i},{j}) = {answer_s[i][j]}')
     answer_e: Matrix[bool] = []
     for i in range(nl.rows):
         answer_e.append([])
         for j in range(nl.cols-1):
             answer_e[i].append(model[e[i][j].id-1] > 0)
-            print(f'e({i},{j}) = {answer_e[i][j]}')
 
     print('Answer:')
     nl.show(with_answer=(answer_s, answer_e))
