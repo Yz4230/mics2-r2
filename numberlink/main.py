@@ -231,6 +231,10 @@ parser.add_argument(
     action='store_true',
     help='show only elapsed time',
 )
+parser.add_argument(
+    '-o', '--output',
+    help='output dimacs file',
+)
 opts = parser.parse_args()
 
 
@@ -563,8 +567,9 @@ def main():
                     cc.add_clause(
                         [-s[i][j], -e[i+1][j], -e[i+1][j+1], -s[i][j+2]])
 
-    with open('numberlink.cnf', 'w') as f:
-        f.write(cc.to_dimacs())
+    if opts.output is not None:
+        with open(opts.output, 'w') as f:
+            f.write(cc.to_dimacs())
 
     if not opts.show_only_elapsed_time:
         print('Problem:')
