@@ -19,11 +19,11 @@ pip install python-sat
 #### 数独ソルバーの実行
 
 ```bash
-python sudoku/main.py sudoku/problem/sudoku1.dat
+python sudoku/main.py sudoku/problem/sudoku1.dat -o sudoku1.cnf
 ```
 
 #### ナンバーリンクソルバーの実行
 
 ```bash
-python numberlink/main.py numberlink/ADC2014_QA/Q/NL_Q06.txt -c 2 3
+python numberlink/main.py numberlink/ADC2014_QA/Q/NL_Q06.txt -c 2 3 -o numberlink06.cnf
 ```
