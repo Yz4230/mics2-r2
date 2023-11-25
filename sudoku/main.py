@@ -1,37 +1,81 @@
+from argparse import ArgumentParser
 from dataclasses import dataclass
-import json
+from typing import cast
 
-from cnf import CNF, Literal
+from cnf import CnfComposer, Literal
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
+class Hint:
+    row: int  # 0-indexed
+    col: int  # 0-indexed
+    value: int  # 0-indexed
+
+
+@dataclass(frozen=True, kw_only=True)
 class Sudoku:
     name = 'sudoku'
     rows: int
     cols: int
+    hints: tuple[Hint, ...]
 
 
-@dataclass(frozen=True)
-class Hint:
-    row: int  # 1-indexed
-    col: int  # 1-indexed
-    value: int  # 1-indexed
-
-
-def _main():
-    with open('sudoku.txt') as f:
-        sudoku: Sudoku | None = None
+def load_problem(filename: str) -> Sudoku:
+    with open(filename) as f:
+        rows = 0
+        cols = 0
         hints: list[Hint] = []
         for line in f.readlines():
             parts = line.split()
             if parts[0] == 'p' and parts[1] == Sudoku.name:
-                sudoku = Sudoku(*map(int, parts[2:]))
+                rows = int(parts[2])
+                cols = int(parts[3])
             else:
-                h = Hint(*map(int, parts))
+                h = Hint(
+                    row=int(parts[0]) - 1,
+                    col=int(parts[1]) - 1,
+                    value=int(parts[2]) - 1)
                 hints.append(h)
-        assert sudoku is not None
+        return Sudoku(rows=rows, cols=cols, hints=tuple(hints))
 
-    cnf = CNF()
+
+def display(grid: list[list[int]]):
+    s = '┏━━━┯━━━┯━━━┳━━━┯━━━┯━━━┳━━━┯━━━┯━━━┓\n'
+    for r in range(9):
+        s += '┃'
+        for c in range(9):
+            if grid[r][c] == -1:
+                s += '   '
+            else:
+                s += f' {grid[r][c]+1} '
+            s += '┃' if c % 3 == 2 else '│'
+        if r == 8:
+            s += '\n┗━━━┷━━━┷━━━┻━━━┷━━━┷━━━┻━━━┷━━━┷━━━┛'
+        elif r % 3 == 2:
+            s += '\n┣━━━┿━━━┿━━━╋━━━┿━━━┿━━━╋━━━┿━━━┿━━━┫\n'
+        else:
+            s += '\n┠───┼───┼───╂───┼───┼───╂───┼───┼───┨\n'
+    print(s)
+
+
+parser = ArgumentParser(
+    prog='sudoku',
+    description='sudoku solver',
+)
+parser.add_argument(
+    'filename',
+    help='problem file',
+)
+parser.add_argument(
+    '-o', '--output',
+    help='output dimacs file',
+)
+opts = parser.parse_args()
+
+
+def main():
+    sudoku = load_problem(opts.filename)
+    cc = CnfComposer()
 
     # p[i][j][k] := マス(i, j)に数字kが入る
     p: list[list[list[Literal]]] = []
@@ -42,14 +86,14 @@ def _main():
         for j in range(9):
             p[i].append([])
             for k in range(9):
-                literal = Literal(name=f'p_{i}{j}={k}')
+                literal = cc.new_literal(name=f'p_{i}{j}={k}')
                 p[i][j].append(literal)
             # p[i][j][1~9]のうち、少なくとも1つは真
-            cnf.add_clause(p[i][j])
+            cc.add_clause(p[i][j])
             for a in range(9):
                 for b in range(a + 1, 9):
                     # p[i][j][a]とp[i][j][b]のうち、両方とも真になることはない
-                    cnf.add_clause([-p[i][j][a], -p[i][j][b]])
+                    cc.add_clause([-p[i][j][a], -p[i][j][b]])
 
     # 全てのマスについて...
     for i in range(9):
@@ -88,7 +132,7 @@ def _main():
                 r = block_row * 3 + k // 3
                 c = block_col * 3 + k % 3
                 for n in range(9):
-                    cnf.add_clause([-p[i][j][n], -p[r][c][n]])
+                    cc.add_clause([-p[i][j][n], -p[r][c][n]])
 
             # 1行につき1つの数字
             for row in range(9):
@@ -99,7 +143,7 @@ def _main():
                     # 現在のマスと同じブロックは除外
                     continue
                 for n in range(9):
-                    cnf.add_clause([-p[i][j][n], -p[row][j][n]])
+                    cc.add_clause([-p[i][j][n], -p[row][j][n]])
 
             # 1列につき1つの数字
             for col in range(9):
@@ -110,43 +154,37 @@ def _main():
                     # 現在のマスと同じブロックは除外
                     continue
                 for n in range(9):
-                    cnf.add_clause([-p[i][j][n], -p[i][col][n]])
+                    cc.add_clause([-p[i][j][n], -p[i][col][n]])
 
-    for hint in hints:
-        cnf.add_clause([p[hint.row-1][hint.col-1][hint.value-1]])
+    for hint in sudoku.hints:
+        cc.add_clause([p[hint.row][hint.col][hint.value]])
 
-    with open('sudoku.cnf', 'w') as f:
-        f.write(cnf.to_dimacs())
+    if opts.output:
+        with open(opts.output, 'w') as f:
+            f.write(cc.to_dimacs())
 
-    with open('id_to_str.json', 'w') as f:
-        d = {}
-        for i in range(9):
-            for j in range(9):
-                for k in range(9):
-                    p_ijk = p[i][j][k]
-                    d[str(p_ijk.id)] = p_ijk.name
-        json.dump(d, f)
+    print("Problem:")
+    grid = [[-1 for _ in range(9)] for _ in range(9)]
+    for hint in sudoku.hints:
+        grid[hint.row][hint.col] = hint.value
+    display(grid)
 
+    solver = cc.to_solver()
+    is_satisfiable = solver.solve()
+    if not is_satisfiable:
+        print("No solution")
+        return
 
-def main():
-    with open('id_to_str.json') as f:
-        json_str = f.read()
-        id_to_str = json.loads(json_str)
+    model = cast(list[int], solver.get_model())
+    for i in range(9):
+        for j in range(9):
+            for k in range(9):
+                if model[p[i][j][k].id-1] > 0:
+                    grid[i][j] = k
+                    break
 
-    with open('result.txt') as f:
-        lines = f.readlines()
-        for line in lines:
-            if line.startswith('s '):
-                if line == 's SATISFIABLE\n':
-                    print('SATISFIABLE')
-                else:
-                    print('UNSATISFIABLE')
-            elif line.startswith('v '):
-                literals = list(map(int, line.split()[1:]))
-                for literal in literals:
-                    if literal > 0:
-                        print(id_to_str[str(literal)], end=' ')
-        print()
+    print("Solution:")
+    display(grid)
 
 
 if __name__ == '__main__':
