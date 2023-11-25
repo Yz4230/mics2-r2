@@ -392,7 +392,7 @@ def main():
                     p4 = e[i][j]
                     # e_i(j-1) + s_ij + e_ij >= 1
                     cc.add_clause([p2, p3, p4])
-                    # e_i(j-1) + s_ij + e_ij <= 2
+                    # e_i(j-1) + s_ij + e_ij < 2
                     cc.add_clause([-p2, -p3])
                     cc.add_clause([-p2, -p4])
                     cc.add_clause([-p3, -p4])
@@ -402,7 +402,7 @@ def main():
                     p4 = e[i][j]
                     # s_(i-1)j + s_ij + e_ij >= 1
                     cc.add_clause([p1, p3, p4])
-                    # s_(i-1)j + s_ij + e_ij <= 2
+                    # s_(i-1)j + s_ij + e_ij < 2
                     cc.add_clause([-p1, -p3])
                     cc.add_clause([-p1, -p4])
                     cc.add_clause([-p3, -p4])
@@ -413,7 +413,7 @@ def main():
                     p4 = e[i][j]
                     # s_(i-1)j + e_i(j-1) + s_ij + e_ij >= 1
                     cc.add_clause([p1, p2, p3, p4])
-                    # s_(i-1)j + e_i(j-1) + s_ij + e_ij <= 2
+                    # s_(i-1)j + e_i(j-1) + s_ij + e_ij < 2
                     cc.add_clause([-p1, -p2])
                     cc.add_clause([-p1, -p3])
                     cc.add_clause([-p1, -p4])
@@ -425,14 +425,14 @@ def main():
                     p3 = s[i][j]
                     # e_i(j-1) + s_ij >= 1
                     cc.add_clause([p2, p3])
-                    # e_i(j-1) + s_ij <= 2
+                    # e_i(j-1) + s_ij < 2
                     cc.add_clause([-p2, -p3])
                 elif pat == Pattern.BOTTOM_LEFT:  # パターン6: 左下
                     p1 = s[i-1][j]
                     p4 = e[i][j]
                     # s_(i-1)j + e_ij >= 1
                     cc.add_clause([p1, p4])
-                    # s_(i-1)j + e_ij <= 2
+                    # s_(i-1)j + e_ij < 2
                     cc.add_clause([-p1, -p4])
                 elif pat == Pattern.RIGHT:  # パターン7: 右辺
                     p1 = s[i-1][j]
@@ -440,7 +440,7 @@ def main():
                     p3 = s[i][j]
                     # s_(i-1)j + e_i(j-1) + s_ij >= 1
                     cc.add_clause([p1, p2, p3])
-                    # s_(i-1)j + e_i(j-1) + s_ij <= 2
+                    # s_(i-1)j + e_i(j-1) + s_ij < 2
                     cc.add_clause([-p1, -p2])
                     cc.add_clause([-p1, -p3])
                     cc.add_clause([-p2, -p3])
@@ -450,7 +450,7 @@ def main():
                     p4 = e[i][j]
                     # s_(i-1)j + e_i(j-1) + e_ij >= 1
                     cc.add_clause([p1, p2, p4])
-                    # s_(i-1)j + e_i(j-1) + e_ij <= 2
+                    # s_(i-1)j + e_i(j-1) + e_ij < 2
                     cc.add_clause([-p1, -p2])
                     cc.add_clause([-p1, -p4])
                     cc.add_clause([-p2, -p4])
@@ -459,7 +459,7 @@ def main():
                     p2 = e[i][j-1]
                     # s_(i-1)j + e_i(j-1) >= 1
                     cc.add_clause([p1, p2])
-                    # s_(i-1)j + e_i(j-1) <= 2
+                    # s_(i-1)j + e_i(j-1) < 2
                     cc.add_clause([-p1, -p2])
 
     # s_ij = 1 -> x_ij = x_(i+1)j
