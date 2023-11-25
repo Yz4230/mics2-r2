@@ -27,3 +27,12 @@ python sudoku/main.py sudoku/problem/sudoku1.dat -o sudoku1.cnf
 ```bash
 python numberlink/main.py numberlink/ADC2014_QA/Q/NL_Q06.txt -c 2 3 -o numberlink06.cnf
 ```
+
+#### カクタスプロットの作成
+
+```bash
+cd benchmark
+python download.py satlib
+python bench.py satlib result.csv
+./cactus.plt
+```
